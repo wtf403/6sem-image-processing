@@ -1,13 +1,13 @@
 import React from 'react';
-import './App.css';
-import AppRouter from './AppRouter';
+import './style.css';
+import Editor from './Editor';
 import { ImageProvider } from './ImageProvider';
 
 function App() {
-  
+
   return (
     <ImageProvider>
-      <AppRouter /> 
+      <Editor />
     </ImageProvider>
   )
 }

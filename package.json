@@ -15,17 +15,19 @@
     "match-sorter": "^6.3.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.0",
     "sort-by": "^1.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react-swc": "^3.5.0",
+    "classnames": "^2.5.1",
     "eslint": "^8.55.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "vite": "^5.0.8"
-  }
+    "vite": "^5.0.8",
+    "vite-plugin-svgr": "^4.2.0"
+  },
+  "homepage": "https://wtf403.github.io/6sem-image-processing"
 }
