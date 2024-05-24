@@ -2,8 +2,8 @@ import React, { useRef, useContext, useEffect, useState, useLayoutEffect } from 
 import { ImageContext } from "@/ImageProvider";
 import "./style.css";
 
-import Arrow from "@/assets/Arrow.svg?react"
-import Pick from "@/assets/Pick.svg?react";
+import Arrow from "@/assets/arrow.svg?react"
+import Pick from "@/assets/pick.svg?react";
 import Download from "@/assets/download.svg?react"
 import Move from "@/assets/move.svg?react"
 import Transfrom from "@/assets/transform.svg?react"
@@ -56,7 +56,7 @@ const Editor = () => {
     x: 0,
     y: 0,
   });
-  const [handStep, setHandStep] = useState(10);
+  const [handStep] = useState(10);
   const [showBg, setShowBg] = useState(false);
 
   // Работа с модальны окном
