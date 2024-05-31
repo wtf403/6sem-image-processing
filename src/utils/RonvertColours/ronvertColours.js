@@ -28,7 +28,7 @@ export function rgbToXyz(rgb) {
   const y = r * 0.2126729 + g * 0.7151522 + b * 0.072175;
   const z = r * 0.0193339 + g * 0.119192 + b * 0.9503041;
 
-  return [x * 100, y * 100, z * 100];
+  return [(x * 100).toFixed(2), (y * 100).toFixed(2), (z * 100).toFixed(2)];
 }
 
 export function rgbToHex(r, g, b) {
@@ -61,7 +61,7 @@ export function xyzToLab(xyz) {
   const a = 500 * (f(fx) - f(fy));
   const b = 200 * (f(fy) - f(fz));
 
-  return [L, a, b];
+  return [L.toFixed(2), a.toFixed(2), b.toFixed(2)];
 }
 // Calculate contrast between two colors
 export function calculateContrast(color1, color2) {

@@ -2,12 +2,12 @@ import React, { useRef, useContext, useEffect, useState, useLayoutEffect } from 
 import { ImageContext } from "@/ImageProvider";
 import "./style.css";
 
-import Arrow from "@/assets/arrow.svg?react"
+import Arrow from "@/assets/arrow.svg?react";
 import Pick from "@/assets/pick.svg?react";
-import Download from "@/assets/download.svg?react"
-import Move from "@/assets/move.svg?react"
-import Transfrom from "@/assets/transform.svg?react"
-import Fitltration from "@/assets/filtration.svg?react"
+import Download from "@/assets/download.svg?react";
+import Move from "@/assets/move.svg?react";
+import Transform from "@/assets/transform.svg?react";
+import Filtration from "@/assets/filtration.svg?react";
 import Correction from "@/assets/correction.svg?react";
 
 import Button from "@/components/Button";
@@ -50,14 +50,8 @@ const Editor = () => {
   const [infoActive, setInfoActive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [canvasTranslation, setCanvasTranslation] = useState({ x: 0, y: 0 });
-  const [imageCoordinatesBase, setImageCoordinatesBase] = useState({
-    x: 0,
-    y: 0,
-  });
-  const [imageCoordinatesExtra, setImageCoordinatesExtra] = useState({
-    x: 0,
-    y: 0,
-  });
+  const [imageCoordinatesBase, setImageCoordinatesBase] = useState({ x: 0, y: 0 });
+  const [imageCoordinatesExtra, setImageCoordinatesExtra] = useState({ x: 0, y: 0 });
   const [handStep] = useState(10);
   const [showBg, setShowBg] = useState(false);
 
@@ -65,6 +59,7 @@ const Editor = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalCurvesOpen, setIsModalCurvesOpen] = useState(false);
   const [isModalFilterOpen, setIsModalFilterOpen] = useState(false);
+
   const openModal = () => {
     setIsModalOpen(true);
     setToolActive("cursor");
@@ -82,7 +77,9 @@ const Editor = () => {
     setIsModalCurvesOpen(false);
     setIsModalFilterOpen(false);
   };
+
   const [isContextModalOpen, setIsContextModalOpen] = useState(false);
+
   const openContextModal = () => {
     setIsContextModalOpen(true);
     setToolActive("cursor");
@@ -107,9 +104,7 @@ const Editor = () => {
     if (!image) return;
 
     const imageObj = new Image();
-
     imageObj.crossOrigin = "anonymous";
-
     imageObj.src = image;
 
     const workspace = document.querySelector(".workspace");
@@ -133,12 +128,7 @@ const Editor = () => {
 
       canvasElement.width = workspaceWidth;
       canvasElement.height = workspaceHeight;
-      context.current.clearRect(
-        0,
-        0,
-        canvasElement.width,
-        canvasElement.height
-      );
+      context.current.clearRect(0, 0, canvasElement.width, canvasElement.height);
       context.current.drawImage(
         imageObj,
         canvasTranslation.x + (maxWidth - scaledWidth) / 2 + 50,
@@ -146,8 +136,8 @@ const Editor = () => {
         scaledWidth,
         scaledHeight
       );
-      setWidth(scaledWidth);
-      setHeight(scaledHeight);
+      setWidth(imageObj.width);
+      setHeight(imageObj.height);
 
       setSelectOption(Math.round(newScaleFactor * 100));
       setFileSize(Math.floor((imageObj.src.length / 1024) * 0.77));
@@ -155,8 +145,7 @@ const Editor = () => {
       const handleWheel = (event) => {
         event.preventDefault();
         const isCtrlPressed = event.ctrlKey || event.metaKey;
-        const isTwoFingerScroll =
-          event.deltaMode === 0 && Math.abs(event.deltaY) > 200;
+        const isTwoFingerScroll = event.deltaMode === 0 && Math.abs(event.deltaY) > 200;
 
         if (isCtrlPressed || isTwoFingerScroll) {
           const delta = event.deltaY;
@@ -171,14 +160,7 @@ const Editor = () => {
         canvasElement.removeEventListener("wheel", handleWheel);
       };
     };
-  }, [
-    image,
-    scaleFactor,
-    canvasTranslation.x,
-    canvasTranslation.y,
-    isModalCurvesOpen,
-    isModalFilterOpen,
-  ]);
+  }, [image, scaleFactor, canvasTranslation.x, canvasTranslation.y, isModalCurvesOpen, isModalFilterOpen]);
 
   const handleCanvasClick = (event) => {
     const canvasRef = canvas.current;
@@ -221,13 +203,7 @@ const Editor = () => {
   // Рука
   useEffect(() => {
     const handleKeyDownEvent = (e) =>
-      handleKeyDown(
-        handStep,
-        toolActive,
-        canvasTranslation,
-        setCanvasTranslation,
-        e
-      );
+      handleKeyDown(handStep, toolActive, canvasTranslation, setCanvasTranslation, e);
     document.body.addEventListener("keydown", handleKeyDownEvent);
     return () => {
       document.body.removeEventListener("keydown", handleKeyDownEvent);
@@ -262,28 +238,12 @@ const Editor = () => {
     if (isDragging && toolActive === "hand") {
       const dx = e.clientX - rect.left - cursor.x;
       const dy = e.clientY - rect.top - cursor.y;
-      updateTranslation(
-        animationFrameId,
-        canvasTranslation,
-        setCanvasTranslation,
-        dx,
-        dy,
-        width,
-        height,
-        scaleFactor
-      );
+      updateTranslation(animationFrameId, canvasTranslation, setCanvasTranslation, dx, dy, width, height, scaleFactor);
     }
   };
-  const handleKeyDownEvent = (e) =>
-    handleKeyDown(
-      handStep,
-      toolActive,
-      canvasTranslation,
-      setCanvasTranslation,
-      e
-    );
-  const handleKeyUpEvent = (e) =>
-    handleKeyUp(toolActive, canvasTranslation, setCanvasTranslation, e);
+
+  const handleKeyDownEvent = (e) => handleKeyDown(handStep, toolActive, canvasTranslation, setCanvasTranslation, e);
+  const handleKeyUpEvent = (e) => handleKeyUp(toolActive, canvasTranslation, setCanvasTranslation, e);
   const handleMouseUpEvent = () => handleMouseUp(setIsDragging);
   const handleMouseDownEvent = () => handleMouseDown(toolActive, setIsDragging);
 
@@ -311,7 +271,6 @@ const Editor = () => {
       window.removeEventListener("keydown", handleKeyDownShortcut);
     };
   }, []);
-
 
   async function handleDownload() {
     try {
@@ -383,7 +342,6 @@ const Editor = () => {
     return { clipX, clipY, clipWidth, clipHeight };
   }
 
-
   const showPreview = (value) => {
     setShowBg(value);
   };
@@ -429,13 +387,13 @@ const Editor = () => {
           <Move />
         </Button>
         <Button onClick={openModal} disabled={!image}>
-          <Transfrom />
+          <Transform />
         </Button>
         <Button onClick={openCurvesModal} disabled={!image}>
           <Correction />
         </Button>
         <Button onClick={openFilterModal} disabled={!image}>
-          <Fitltration />
+          <Filtration />
         </Button>
         <Button onClick={handleDownload} disabled={!image}>
           <Download />
@@ -591,10 +549,10 @@ const Editor = () => {
             ></div>
             <p className="status-bar__text">&nbsp;{pipetteColor1}</p>
             <p className="status-bar__text">
-              &nbsp;{pipetteColor1 && rgbToXyz(extractRGB(pipetteColor1))}
+              &nbsp;{pipetteColor1 && rgbToXyz(extractRGB(pipetteColor1)).join('; ')}
             </p>
             <p className="status-bar__text">
-              &nbsp;{pipetteColor1 && xyzToLab(rgbToXyz(extractRGB(pipetteColor1)))}
+              &nbsp;{pipetteColor1 && xyzToLab(rgbToXyz(extractRGB(pipetteColor1))).join(';  ')}
             </p>
             <p className="status-bar__text">
               &nbsp;({imageCoordinatesBase.x.toFixed(0)},{" "}
@@ -609,7 +567,7 @@ const Editor = () => {
             ></div>
             <p className="status-bar__text">&nbsp;{pipetteColor2}</p>
             <p className="status-bar__text">
-              &nbsp;{pipetteColor2 && rgbToXyz(extractRGB(pipetteColor2))}
+              &nbsp;{pipetteColor2 && rgbToXyz(extractRGB(pipetteColor2)).join('; ')}
             </p>
             <p className="status-bar__text">
               &nbsp;{pipetteColor2 && xyzToLab((extractRGB(pipetteColor2)))}
