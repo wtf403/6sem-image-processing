@@ -9,10 +9,14 @@ import calculateCurves from "@/utils/ImageProcessing/calculateCurves";
 const CurvesModal = ({ imageCtx, closeModal, showPreview }) => {
   const { image, setImage } = useContext(ImageContext);
   const [arrData, setArrData] = useState([]);
-  const [inA, setInA] = useState(0);
-  const [outA, setOutA] = useState(0);
+  const [inA, setInA] = useState(5);
+  const [outA, setOutA] = useState(5);
   const [inB, setInB] = useState(255);
   const [outB, setOutB] = useState(255);
+  const [prevInA, setPrevInA] = useState(5);
+  const [prevOutA, setPrevOutA] = useState(5);
+  const [prevInB, setPrevInB] = useState(255);
+  const [prevOutB, setPrevOutB] = useState(255);
   const [arrR, setArrR] = useState([]);
   const [arrG, setArrG] = useState([]);
   const [arrB, setArrB] = useState([]);
@@ -64,7 +68,6 @@ const CurvesModal = ({ imageCtx, closeModal, showPreview }) => {
     const width = 500 - margin.left - margin.right;
     const height = 500 - margin.top - margin.bottom;
 
-    // Очистка SVG
     d3.select("#histogram").selectAll("*").remove();
 
     const svg = d3
@@ -81,15 +84,14 @@ const CurvesModal = ({ imageCtx, closeModal, showPreview }) => {
     const color = d3
       .scaleOrdinal()
       .domain(["dataR", "dataG", "dataB"])
-      .range(["red", "green", "blue"]); // Здесь вы можете выбрать любые цвета для каждого массива данных
+      .range(["red", "green", "blue"]);
 
-    // Построение линий для цветов RGB с использованием кривой Безье
     svg
       .append("path")
       .datum(dataR)
       .attr("class", "line")
       .style("stroke", color("dataR"))
-      .style("fill", "none") // Устанавливаем прозрачный цвет заливки
+      .style("fill", "none")
       .attr(
         "d",
         d3
@@ -97,7 +99,7 @@ const CurvesModal = ({ imageCtx, closeModal, showPreview }) => {
           .x((d, i) => x(i))
           .y((d) => y(d))
           .curve(d3.curveBasis)
-      ); // Используем кривую Безье для плавных линий
+      );
 
     svg
       .append("path")
@@ -133,12 +135,12 @@ const CurvesModal = ({ imageCtx, closeModal, showPreview }) => {
       .append("g")
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x).tickValues(d3.range(0, 256, 15))); // Добавляем деления по оси X
+      .call(d3.axisBottom(x).tickValues(d3.range(0, 256, 15)));
 
     svg
       .append("g")
       .attr("class", "y axis")
-      .call(d3.axisLeft(y).tickValues(d3.range(0, 256, 15))); // Добавляем деления по оси Y
+      .call(d3.axisLeft(y).tickValues(d3.range(0, 256, 15)));
 
     svg
       .selectAll(".pointA")
@@ -161,8 +163,8 @@ const CurvesModal = ({ imageCtx, closeModal, showPreview }) => {
             const svgRect = svgElement.getBoundingClientRect();
             const svgX = event.x - svgRect.left;
             const svgY = event.y - svgRect.top;
-            const newX = Math.max(0, Math.min(inB - 1, x.invert(svgX)));
-            const newY = Math.max(0, Math.min(255, y.invert(svgY)));
+            const newX = Math.max(5, Math.min(inB - 1, x.invert(svgX)));
+            const newY = Math.max(5, Math.min(255, svgY > 255 / 2 ? 255 / 2 + (svgY - 255 / 2) / 2 : svgY));
             setInA(Math.round(newX));
             setOutA(Math.round(newY));
           })
@@ -193,7 +195,7 @@ const CurvesModal = ({ imageCtx, closeModal, showPreview }) => {
             const svgX = event.x - svgRect.left;
             const svgY = event.y - svgRect.top;
             const newX = Math.max(inA + 1, Math.min(255, x.invert(svgX)));
-            const newY = Math.max(0, Math.min(255, y.invert(svgY)));
+            const newY = Math.max(1, Math.min(255, svgY > 255 / 2 ? 255 / 2 + (svgY - 255 / 2) / 2 : svgY));
             d3.select(this).attr("cx", x(newX)).attr("cy", y(newY));
             setInB(Math.round(newX));
             setOutB(Math.round(newY));
@@ -316,8 +318,8 @@ const CurvesModal = ({ imageCtx, closeModal, showPreview }) => {
   };
 
   const handleCurvesReset = () => {
-    setInA(0);
-    setOutA(0);
+    setInA(1);
+    setOutA(1);
     setInB(255);
     setOutB(255);
   };
@@ -354,6 +356,19 @@ const CurvesModal = ({ imageCtx, closeModal, showPreview }) => {
     }
   };
 
+  const validateInput = (newValue, type) => {
+    if (type === "inA" && (newValue < 0 || newValue >= inB)) {
+      return false;
+    }
+    if (type === "inB" && (newValue <= inA || newValue > 255)) {
+      return false;
+    }
+    if ((type === "outA" || type === "outB") && (newValue < 0 || newValue > 255)) {
+      return false;
+    }
+    return true;
+  };
+
   return (
     <form
       className="curves-modal form"
@@ -372,14 +387,28 @@ const CurvesModal = ({ imageCtx, closeModal, showPreview }) => {
             max={Number(inB) - 1}
             min={0}
             value={inA}
-            onChange={setInA}
+            onChange={(v) => {
+              if (validateInput(v, "inA")) {
+                setPrevInA(inA);
+                setInA(v);
+              } else {
+                setInA(prevInA);
+              }
+            }}
           />
           <Input
             type="number"
             max={255}
             min={Number(inA) + 1}
             value={inB}
-            onChange={setInB}
+            onChange={(v) => {
+              if (validateInput(v, "inB")) {
+                setPrevInB(inB);
+                setInB(v);
+              } else {
+                setInB(prevInB);
+              }
+            }}
           />
           <p className="curves-modal__type">Output</p>
           <Input
@@ -387,14 +416,28 @@ const CurvesModal = ({ imageCtx, closeModal, showPreview }) => {
             max={255}
             min={0}
             value={outA}
-            onChange={setOutA}
+            onChange={(v) => {
+              if (validateInput(v, "outA")) {
+                setPrevOutA(outA);
+                setOutA(v);
+              } else {
+                setOutA(prevOutA);
+              }
+            }}
           />
           <Input
             type="number"
             max={255}
             min={0}
             value={outB}
-            onChange={setOutB}
+            onChange={(v) => {
+              if (validateInput(v, "outB")) {
+                setPrevOutB(outB);
+                setOutB(v);
+              } else {
+                setOutB(prevOutB);
+              }
+            }}
           />
         </div>
         <div className="curves-modal__settings">
