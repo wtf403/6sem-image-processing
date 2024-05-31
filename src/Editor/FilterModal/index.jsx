@@ -25,7 +25,6 @@ const FilterModal = ({ imageCtx, closeModal, showPreview }) => {
         [0, 0, 0],
       ],
     },
-
     {
       value: "sharpening",
       name: "Sharpening",
@@ -51,6 +50,24 @@ const FilterModal = ({ imageCtx, closeModal, showPreview }) => {
         [1, 1, 1],
         [1, 1, 1],
         [1, 1, 1],
+      ],
+    },
+    {
+      value: "x-sobel",
+      name: "Sobel X",
+      matrix: [
+        [-1, 0, 1],
+        [-2, 0, 2],
+        [-1, 0, 1],
+      ],
+    },
+    {
+      value: "y-sobel",
+      name: "Sobel Y",
+      matrix: [
+        [-1, -2, -1],
+        [0, 0, 0],
+        [1, 2, 1],
       ],
     },
   ];
@@ -129,20 +146,41 @@ const FilterModal = ({ imageCtx, closeModal, showPreview }) => {
     imageObj.src = image;
     const paddData = addPadding(arrData, imageObj.width, imageObj.height);
     const result = new Uint8ClampedArray(arrData.length);
-    for (let y = 0; y < imageObj.height; y++) {
-      for (let x = 0; x < imageObj.width; x++) {
-        for (let z = 0; z < 4; z++) {
-          const out = (y * imageObj.width + x) * 4 + z;
-          let sum = 0;
-          let sumMatrix = 0;
-          for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-              const inp = ((y + i) * (imageObj.width + 2) + (x + j)) * 4 + z;
-              sum += paddData[inp] * matrix[i][j];
-              sumMatrix += matrix[i][j];
+    if (mode === "x-sobel" || mode === "y-sobel") {
+      const width = imageObj.width;
+      const height = imageObj.height;
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          for (let c = 0; c < 3; c++) {  // Only process RGB, ignore alpha
+            const outputIndex = (y * width + x) * 4 + c;
+            let sum = 0;
+            for (let ky = 0; ky < 3; ky++) {
+              for (let kx = 0; kx < 3; kx++) {
+                const inputIndex = ((y + ky) * (width + 2) + (x + kx)) * 4 + c;
+                sum += paddData[inputIndex] * matrix[ky][kx];
+              }
             }
+            result[outputIndex] = Math.min(Math.max(sum, 0), 255);
           }
-          result[out] = sum / sumMatrix;
+          result[(y * width + x) * 4 + 3] = arrData[(y * width + x) * 4 + 3]; // Preserve alpha
+        }
+      }
+    } else {
+      for (let y = 0; y < imageObj.height; y++) {
+        for (let x = 0; x < imageObj.width; x++) {
+          for (let z = 0; z < 4; z++) {
+            const out = (y * imageObj.width + x) * 4 + z;
+            let sum = 0;
+            let sumMatrix = 0;
+            for (let i = 0; i < 3; i++) {
+              for (let j = 0; j < 3; j++) {
+                const inp = ((y + i) * (imageObj.width + 2) + (x + j)) * 4 + z;
+                sum += paddData[inp] * matrix[i][j];
+                sumMatrix += matrix[i][j];
+              }
+            }
+            result[out] = sum / sumMatrix;
+          }
         }
       }
     }
@@ -181,8 +219,8 @@ const FilterModal = ({ imageCtx, closeModal, showPreview }) => {
                     ? modes.find((item) => item.value === mode)?.matrix[i][j]
                     : matrix[i][j]
                 }
-                onChange={(item) => {
-                  handleMatrixChange(i, j, parseInt(item));
+                onChange={(event) => {
+                  handleMatrixChange(i, j, parseInt(event.target.value));
                 }}
               />
             </div>
@@ -218,7 +256,7 @@ const FilterModal = ({ imageCtx, closeModal, showPreview }) => {
             type="checkbox"
             name="previewCheckbox"
             id="previewCheckbox"
-            onChange={handlePreview}
+            onChange={(e) => handlePreview(e.target.checked)}
           />
         </label>
       </div>
@@ -235,7 +273,14 @@ const FilterModal = ({ imageCtx, closeModal, showPreview }) => {
           className="filter-modal__button"
           normal
           shadow
-          onClick={() => setMode("identical")}
+          onClick={() => {
+            setMode("identical");
+            setMatrix([
+              [0, 0, 0],
+              [0, 1, 0],
+              [0, 0, 0],
+            ]);
+          }}
         >
           Сбросить
         </Button>

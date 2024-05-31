@@ -19,9 +19,7 @@
 
 .form__settings {
     position: relative;
-    display: grid;
     align-items: center;
-    grid-template-columns: 110px 1fr;
     line-height: 100%;
     gap: 8px;
     margin-bottom: 10px;
@@ -36,7 +34,6 @@
     flex-direction: column;
     color: white;
     align-items: start;
-    width: 95%;
 }
 
 .tooltip {
@@ -76,7 +73,7 @@
     flex-direction: column;
     position: absolute;
     right: -58px;
-    top: 42px;
+    bottom: 5px;
 }
 
 .form__lock-button {

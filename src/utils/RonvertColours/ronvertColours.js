@@ -1,17 +1,13 @@
 export function extractRGB(rgbString) {
-  // Используем регулярное выражение для поиска чисел внутри скобок
   const regex = /(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})/;
   const matches = rgbString.match(regex);
 
   if (matches && matches.length === 4) {
-    // matches[0] содержит весь найденный текст, а matches[1], matches[2], matches[3]
-    // содержат значения R, G и B соответственно
     const R = parseInt(matches[1]);
     const G = parseInt(matches[2]);
     const B = parseInt(matches[3]);
     return [R, G, B];
   } else {
-    // Если нет совпадений или формат не соответствует ожидаемому, возвращаем null
     return null;
   }
 }
@@ -22,7 +18,7 @@ export function rgbToXyz(rgb) {
   let g = rgb[1] / 255;
   let b = rgb[2] / 255;
 
-  // sRGB reverse gamma-conversion
+  // sRGB reverse gamma-correction
   r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
   g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
   b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
@@ -32,34 +28,42 @@ export function rgbToXyz(rgb) {
   const y = r * 0.2126729 + g * 0.7151522 + b * 0.072175;
   const z = r * 0.0193339 + g * 0.119192 + b * 0.9503041;
 
-  // Возвращаем строку с округленными значениями и пробелами между ними
-  return `${Math.round(x * 100)} ${Math.round(y * 100)} ${Math.round(z * 100)}`;
+  return [x * 100, y * 100, z * 100];
 }
 
-// Convert RGB в Lab
-export function rgbToLab(rgb) {
-  const [x, y, z] = rgbToXyz(rgb);
+export function rgbToHex(r, g, b) {
+  // Convert an individual color component to hex
+  const toHex = (color) => color.toString(16).padStart(2, "0");
 
-  const xRef = 95.0489;
-  const yRef = 100.0;
-  const zRef = 108.884;
-
-  const fx =
-    x / xRef > 0.008856 ? Math.cbrt(x / xRef) : 7.787 * (x / xRef) + 16 / 116;
-  const fy =
-    y / yRef > 0.008856 ? Math.cbrt(y / yRef) : 7.787 * (y / yRef) + 16 / 116;
-  const fz =
-    z / zRef > 0.008856 ? Math.cbrt(z / zRef) : 7.787 * (z / zRef) + 16 / 116;
-
-  const L = 116 * fy - 16;
-  const a = 500 * (fx - fy);
-  const b = 200 * (fy - fz);
-
-  return `${Math.round(L * 100) / 100} ${Math.round(a * 100) / 100} ${
-    Math.round(b * 100) / 100
-  }`;
+  // Concatenate the converted color components
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
+// Convert RGB to Lab
+export function xyzToLab(xyz) {
+  const [x, y, z] = xyz;
+
+  // Коэффициенты для преобразования
+  const xn = 95.047;
+  const yn = 100.0;
+  const zn = 108.883;
+
+  const fx = x / xn;
+  const fy = y / yn;
+  const fz = z / zn;
+
+  const epsilon = 0.008856;
+  const kappa = 903.3;
+
+  const f = (t) => (t > epsilon ? Math.pow(t, 1 / 3) : (kappa * t + 16) / 116);
+
+  const L = 116 * f(fy) - 16;
+  const a = 500 * (f(fx) - f(fy));
+  const b = 200 * (f(fy) - f(fz));
+
+  return [L, a, b];
+}
+// Calculate contrast between two colors
 export function calculateContrast(color1, color2) {
   const rgb1 = color1.map((channel) => channel / 255);
   const rgb2 = color2.map((channel) => channel / 255);
@@ -73,11 +77,9 @@ export function calculateContrast(color1, color2) {
 
 export function calculateLuminance(rgb) {
   const [R, G, B] = rgb.map((channel) => {
-    channel =
-      channel <= 0.03928
-        ? channel / 12.92
-        : Math.pow((channel + 0.055) / 1.055, 2.4);
-    return channel;
+    return channel <= 0.03928
+      ? channel / 12.92
+      : Math.pow((channel + 0.055) / 1.055, 2.4);
   });
 
   return 0.2126 * R + 0.7152 * G + 0.0722 * B;

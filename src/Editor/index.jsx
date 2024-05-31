@@ -28,14 +28,16 @@ import {
 import {
   extractRGB,
   rgbToXyz,
-  rgbToLab,
+  xyzToLab,
   calculateContrast,
 } from "@/utils/RonvertColours/ronvertColours";
+import { rgbToHex } from "../utils/RonvertColours/ronvertColours";
 
 const Editor = () => {
   const { image, setImage } = useContext(ImageContext);
 
   const [toolActive, setToolActive] = useState("cursor");
+  const [hoverColor, setHoverColor] = useState("");
   const [pipetteColor1, setPipetteColor1] = useState("");
   const [pipetteColor2, setPipetteColor2] = useState("");
   const [cursor, setCursor] = useState({ x: 0, y: 0 });
@@ -213,12 +215,10 @@ const Editor = () => {
   };
 
   const updateImage = (image) => {
-    console.log(image);
     setImage(image);
   };
 
   // Рука
-
   useEffect(() => {
     const handleKeyDownEvent = (e) =>
       handleKeyDown(
@@ -236,15 +236,29 @@ const Editor = () => {
 
   const handleMouseMove = (e) => {
     const rect = canvas.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = e.nativeEvent.offsetX;
+    const y = e.nativeEvent.offsetY;
 
-    // Обновляем если курсор находится в пределах canvas
+    // Create a temporary canvas to capture the color from the existing canvas
+    const tempCanvas = document.createElement("canvas");
+    const tempContext = tempCanvas.getContext("2d");
+    tempCanvas.width = canvas.current.width;  // Set the width and height to match the main canvas
+    tempCanvas.height = canvas.current.height;
+
+    // Copy the main canvas content to the temporary canvas
+    tempContext.drawImage(canvas.current, 0, 0);
+
+    // Now retrieve the pixel data from the location of the mouse
+    const pixelData = tempContext.getImageData(x, y, 1, 1).data;
+    const color = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
+    setHoverColor(color);
+
+    // Update cursor position within canvas bounds
     if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
       setCursor({ x, y });
     }
 
-    // Перетаскивание изображения
+    // Dragging image logic
     if (isDragging && toolActive === "hand") {
       const dx = e.clientX - rect.left - cursor.x;
       const dy = e.clientY - rect.top - cursor.y;
@@ -301,6 +315,7 @@ const Editor = () => {
 
   async function handleDownload() {
     try {
+      // eslint-disable-next-line no-undef
       const handle = await showSaveFilePicker({
         suggestedName: 'editedImage.png',
         types: [{
@@ -311,11 +326,17 @@ const Editor = () => {
 
       const canvasRef = canvas.current;
       const originalContext = canvasRef.getContext("2d");
-      const copiedCanvas = deepCopyCanvas(originalContext.canvas);
 
-      const url = copiedCanvas.toDataURL('image/png');
-      const blob = await fetch(url).then(res => res.blob());
+      // Calculate the bounding box of the non-transparent content
+      const { clipX, clipY, clipWidth, clipHeight } = calculateClippingBounds(originalContext);
 
+      // Clip the canvas to its content
+      const copiedCanvas = deepCopyCanvas(originalContext.canvas, clipX, clipY, clipWidth, clipHeight);
+
+      // Directly create a blob from the canvas
+      const blob = await new Promise(resolve => copiedCanvas.toBlob(resolve, 'image/png'));
+
+      // Write the blob to the file system
       const writableStream = await handle.createWritable();
       await writableStream.write(blob);
       await writableStream.close();
@@ -324,13 +345,42 @@ const Editor = () => {
     }
   }
 
-  function deepCopyCanvas(sourceCanvas) {
+  function deepCopyCanvas(sourceCanvas, clipX, clipY, clipWidth, clipHeight) {
     const targetCanvas = document.createElement("canvas");
-    targetCanvas.width = sourceCanvas.width;
-    targetCanvas.height = sourceCanvas.height;
+    targetCanvas.width = clipWidth;
+    targetCanvas.height = clipHeight;
     const targetContext = targetCanvas.getContext("2d");
-    targetContext.drawImage(sourceCanvas, 0, 0);
+
+    // Draw only the desired clipped area of the source canvas onto the target canvas
+    targetContext.drawImage(sourceCanvas, clipX, clipY, clipWidth, clipHeight, 0, 0, clipWidth, clipHeight);
     return targetCanvas;
+  }
+
+  function calculateClippingBounds(context) {
+    const { width, height } = context.canvas;
+    const imageData = context.getImageData(0, 0, width, height).data;
+
+    let minX = width, minY = height, maxX = 0, maxY = 0;
+
+    // Loop through each pixel to find the bounding box of non-transparent content
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const alpha = imageData[(y * width + x) * 4 + 3];
+        if (alpha > 0) { // non-transparent pixel
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    const clipX = minX;
+    const clipY = minY;
+    const clipWidth = maxX - minX + 1;
+    const clipHeight = maxY - minY + 1;
+
+    return { clipX, clipY, clipWidth, clipHeight };
   }
 
 
@@ -421,6 +471,12 @@ const Editor = () => {
 
       <div className="editor__status-bar status-bar">
         <div>
+          <div className="status-bar__text">
+            <span className="status-bar__text">
+              Color: {hoverColor};
+            </span>
+            &nbsp; / &nbsp;
+          </div>
           <span className="status-bar__text">
             Resolution: {Math.round(width)}&nbsp;x&nbsp;{Math.round(height)}
             &nbsp;px&nbsp;&nbsp;/&nbsp;&nbsp;
@@ -538,7 +594,7 @@ const Editor = () => {
               &nbsp;{pipetteColor1 && rgbToXyz(extractRGB(pipetteColor1))}
             </p>
             <p className="status-bar__text">
-              &nbsp;{pipetteColor1 && rgbToLab(extractRGB(pipetteColor1))}
+              &nbsp;{pipetteColor1 && xyzToLab(rgbToXyz(extractRGB(pipetteColor1)))}
             </p>
             <p className="status-bar__text">
               &nbsp;({imageCoordinatesBase.x.toFixed(0)},{" "}
@@ -556,7 +612,7 @@ const Editor = () => {
               &nbsp;{pipetteColor2 && rgbToXyz(extractRGB(pipetteColor2))}
             </p>
             <p className="status-bar__text">
-              &nbsp;{pipetteColor2 && rgbToLab(extractRGB(pipetteColor2))}
+              &nbsp;{pipetteColor2 && xyzToLab((extractRGB(pipetteColor2)))}
             </p>
             <p className="status-bar__text">
               &nbsp;({imageCoordinatesExtra.x.toFixed(0)},{" "}

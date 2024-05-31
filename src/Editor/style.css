@@ -134,6 +134,7 @@
 
 .status-bar__text {
   line-height: 1.2;
+  display: inline;
 }
 
 @media (prefers-color-scheme: light) {

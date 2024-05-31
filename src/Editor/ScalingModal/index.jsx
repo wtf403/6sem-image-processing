@@ -80,7 +80,6 @@ const ScalingModal = ({ image, closeModal }) => {
         const ctx = canvas.getContext('2d');
         const newWidth = resizeMode === 'Percentage' ? Math.round((image.width * width) / 100) : width;
         const newHeight = resizeMode === 'Percentage' ? Math.round((image.height * height) / 100) : height;
-        console.log(newWidth, newHeight)
         canvas.width = newWidth;
         canvas.height = newHeight;
         // Рисование исходного изображения на холсте
@@ -120,28 +119,46 @@ const ScalingModal = ({ image, closeModal }) => {
             </p>
             <h3 className="form__name">Setup sizes</h3>
             <div className="form__settings">
-                <label className="form__label" htmlFor="resize-mode">Units</label>
-                <Dropdown id="resize-mode" options={["Percentage", "Pixels"]} onSelect={handleResizeModeChange} selectOption={"Pixels"} />
-                <label className="form__label" htmlFor="width">Width</label>
-                <Input
-                    type="number"
-                    id="width"
-                    value={width}
-                    onChange={handleWidthChange}
-                    min={1}
-                    max={resizeMode === 'Pixels' ? 1000 : 10000}
-                    step={1}
-                />
-                <label className="form__label" htmlFor="height">Height</label>
-                <Input
-                    type="number"
-                    id="height"
-                    value={height}
-                    onChange={handleHeightChange}
-                    min={1}
-                    max={resizeMode === 'Percentage' ? 1000 : 10000}
-                    step={1}
-                />
+                <label className="form__label" htmlFor="interpolation-algorithm">
+                    Interpolation algorithm
+                    <div className="form__select-iterpolation">
+                        <Dropdown id="interpolation-algorithm" options={["Nearest Neighbor Interpolation"]} onSelect={handleInterpolationAlgorithmChange} selectOption={"Nearest Neighbor Interpolation"} />
+                        <span
+                            className="tooltip"
+                            data-tooltip="The nearest neighbor algorithm takes the color value of the nearest pixel of the original image for each pixel in the new image. This is a simple and fast algorithm, but it can lead to pixelation when the size changes significantly."
+                        >
+                            &#9432;
+                        </span>
+                    </div>
+                </label>
+                <label className="form__label" htmlFor="resize-mode">
+                    Units
+                    <Dropdown id="resize-mode" options={["Percentage", "Pixels"]} onSelect={handleResizeModeChange} selectOption={"Pixels"} />
+                </label>
+                <label className="form__label" htmlFor="width">
+                    Width
+                    <Input
+                        type="number"
+                        id="width"
+                        value={width}
+                        onChange={handleWidthChange}
+                        min={1}
+                        max={resizeMode === 'Pixels' ? 3000 : 10000}
+                        step={1}
+                    />
+                </label>
+                <label className="form__label" htmlFor="height">
+                    Height
+                    <Input
+                        type="number"
+                        id="height"
+                        value={height}
+                        onChange={handleHeightChange}
+                        min={1}
+                        max={resizeMode === 'Pixels' ? 3000 : 10000}
+                        step={1}
+                    />
+                </label>
                 <div className="form__lock">
                     <svg className="form__lock-line" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19 4.5">
                         <line className="lock" y1="0.5" x2="16.5" y2="0.5"></line>
@@ -157,16 +174,6 @@ const ScalingModal = ({ image, closeModal }) => {
                         <line className="lock" y1="4.5" x2="17" y2="4.5"></line>
                         <line className="lock" x1="16.5" x2="16.5" y2="4.5"></line>
                     </svg>
-                </div>
-                <label className="form__label" htmlFor="interpolation-algorithm">Interpolation algorithm</label>
-                <div className="form__select-iterpolation">
-                    <span
-                        className="tooltip"
-                        data-tooltip="The nearest neighbor algorithm takes the color value of the nearest pixel of the original image for each pixel in the new image. This is a simple and fast algorithm, but it can lead to pixelation when the size changes significantly."
-                    >
-                        &#9432;
-                    </span>
-                    <Dropdown id="interpolation-algorithm" options={["Nearest Neighbor Interpolation"]} onSelect={handleInterpolationAlgorithmChange} selectOption={"Nearest Neighbor Interpolation"} />
                 </div>
             </div>
             <div className="form__errors">
