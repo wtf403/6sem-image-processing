@@ -283,17 +283,17 @@ const Editor = () => {
         }],
       });
 
-      const canvasRef = canvas.current;
-      const originalContext = canvasRef.getContext("2d");
+      // Create a temporary canvas to hold the original image
+      const originalCanvas = document.createElement("canvas");
+      originalCanvas.width = imageObj.width;
+      originalCanvas.height = imageObj.height;
+      const originalContext = originalCanvas.getContext("2d");
 
-      // Calculate the bounding box of the non-transparent content
-      const { clipX, clipY, clipWidth, clipHeight } = calculateClippingBounds(originalContext);
+      // Draw the original image onto the temporary canvas
+      originalContext.drawImage(imageObj, 0, 0);
 
-      // Clip the canvas to its content
-      const copiedCanvas = deepCopyCanvas(originalContext.canvas, clipX, clipY, clipWidth, clipHeight);
-
-      // Directly create a blob from the canvas
-      const blob = await new Promise(resolve => copiedCanvas.toBlob(resolve, 'image/png'));
+      // Get a blob from the temporary canvas
+      const blob = await new Promise(resolve => originalCanvas.toBlob(resolve, 'image/png'));
 
       // Write the blob to the file system
       const writableStream = await handle.createWritable();
@@ -304,44 +304,6 @@ const Editor = () => {
     }
   }
 
-  function deepCopyCanvas(sourceCanvas, clipX, clipY, clipWidth, clipHeight) {
-    const targetCanvas = document.createElement("canvas");
-    targetCanvas.width = clipWidth;
-    targetCanvas.height = clipHeight;
-    const targetContext = targetCanvas.getContext("2d");
-
-    // Draw only the desired clipped area of the source canvas onto the target canvas
-    targetContext.drawImage(sourceCanvas, clipX, clipY, clipWidth, clipHeight, 0, 0, clipWidth, clipHeight);
-    return targetCanvas;
-  }
-
-  function calculateClippingBounds(context) {
-    const { width, height } = context.canvas;
-    const imageData = context.getImageData(0, 0, width, height).data;
-
-    let minX = width, minY = height, maxX = 0, maxY = 0;
-
-    // Loop through each pixel to find the bounding box of non-transparent content
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const alpha = imageData[(y * width + x) * 4 + 3];
-        if (alpha > 0) { // non-transparent pixel
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
-        }
-      }
-    }
-
-    const clipX = minX;
-    const clipY = minY;
-    const clipWidth = maxX - minX + 1;
-    const clipHeight = maxY - minY + 1;
-
-    return { clipX, clipY, clipWidth, clipHeight };
-  }
-
   const showPreview = (value) => {
     setShowBg(value);
   };
@@ -349,7 +311,6 @@ const Editor = () => {
   useLayoutEffect(() => {
     setScaling(Math.round(scaleFactor * 100));
   }, [scaleFactor]);
-
 
   return (
     <section className="editor">
